@@ -1,5 +1,6 @@
 import os
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 
 def load_code_files(folder_path):
@@ -23,9 +24,17 @@ def chunk_code(documents):
         chunk_size=800,
         chunk_overlap=100
     )
+    return splitter.create_documents(documents)
 
-    chunks = splitter.create_documents(documents)
-    return chunks
+
+def create_embeddings(chunks):
+    embedding_model = HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2"
+    )
+    embeddings = embedding_model.embed_documents(
+        [chunk.page_content for chunk in chunks]
+    )
+    return embeddings
 
 
 if __name__ == "__main__":
@@ -33,10 +42,7 @@ if __name__ == "__main__":
 
     docs = load_code_files(code_folder)
     chunks = chunk_code(docs)
+    embeddings = create_embeddings(chunks)
 
-    print(f"Total chunks created: {len(chunks)}\n")
-
-    for i, chunk in enumerate(chunks):
-        print(f"CHUNK {i+1}")
-        print(chunk.page_content)
-        print("-" * 40)
+    print(f"Total chunks: {len(chunks)}")
+    print(f"Embedding vector size: {len(embeddings[0])}")
