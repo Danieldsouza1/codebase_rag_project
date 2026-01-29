@@ -1,6 +1,7 @@
 import os
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
 
 def load_code_files(folder_path):
@@ -27,14 +28,13 @@ def chunk_code(documents):
     return splitter.create_documents(documents)
 
 
-def create_embeddings(chunks):
+def build_vector_store(chunks):
     embedding_model = HuggingFaceEmbeddings(
         model_name="all-MiniLM-L6-v2"
     )
-    embeddings = embedding_model.embed_documents(
-        [chunk.page_content for chunk in chunks]
-    )
-    return embeddings
+
+    vector_store = FAISS.from_documents(chunks, embedding_model)
+    return vector_store
 
 
 if __name__ == "__main__":
@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     docs = load_code_files(code_folder)
     chunks = chunk_code(docs)
-    embeddings = create_embeddings(chunks)
+    vector_store = build_vector_store(chunks)
 
-    print(f"Total chunks: {len(chunks)}")
-    print(f"Embedding vector size: {len(embeddings[0])}")
+    print("Vector store created successfully!")
+    print(f"Total vectors stored: {vector_store.index.ntotal}")
