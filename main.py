@@ -5,22 +5,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
+from src.loaders.code_loader import load_code_files
+
 
 load_dotenv()
-
-
-def load_code_files(folder_path):
-    documents = []
-
-    for root, _, files in os.walk(folder_path):
-        for file in files:
-            if file.endswith(".py"):
-                file_path = os.path.join(root, file)
-                with open(file_path, "r", encoding="utf-8") as f:
-                    documents.append(f.read())
-
-    return documents
-
 
 def chunk_code(documents):
     splitter = RecursiveCharacterTextSplitter(
