@@ -32,9 +32,12 @@ def build_vector_store(chunks):
     embedding_model = HuggingFaceEmbeddings(
         model_name="all-MiniLM-L6-v2"
     )
+    return FAISS.from_documents(chunks, embedding_model)
 
-    vector_store = FAISS.from_documents(chunks, embedding_model)
-    return vector_store
+
+def query_vector_store(vector_store, query, k=2):
+    results = vector_store.similarity_search(query, k=k)
+    return results
 
 
 if __name__ == "__main__":
@@ -44,5 +47,12 @@ if __name__ == "__main__":
     chunks = chunk_code(docs)
     vector_store = build_vector_store(chunks)
 
-    print("Vector store created successfully!")
-    print(f"Total vectors stored: {vector_store.index.ntotal}")
+    query = "Where is login implemented?"
+    results = query_vector_store(vector_store, query)
+
+    print(f"Query: {query}\n")
+
+    for i, doc in enumerate(results):
+        print(f"RESULT {i+1}")
+        print(doc.page_content)
+        print("-" * 40)
