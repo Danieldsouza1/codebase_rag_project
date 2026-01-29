@@ -1,7 +1,12 @@
 import os
+from dotenv import load_dotenv
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
+from langchain_groq import ChatGroq
+
+load_dotenv()
 
 
 def load_code_files(folder_path):
@@ -11,11 +16,8 @@ def load_code_files(folder_path):
         for file in files:
             if file.endswith(".py"):
                 file_path = os.path.join(root, file)
-
                 with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-
-                documents.append(content)
+                    documents.append(f.read())
 
     return documents
 
@@ -35,9 +37,33 @@ def build_vector_store(chunks):
     return FAISS.from_documents(chunks, embedding_model)
 
 
-def query_vector_store(vector_store, query, k=2):
-    results = vector_store.similarity_search(query, k=k)
-    return results
+def generate_answer(query, retrieved_docs):
+    context = "\n\n".join(doc.page_content for doc in retrieved_docs)
+
+    prompt = f"""
+You are a senior software engineer.
+
+Use ONLY the code below to answer the question.
+If the answer is not present, say "Not found in codebase".
+
+CODE:
+{context}
+
+QUESTION:
+{query}
+
+ANSWER:
+"""
+
+    llm = ChatGroq(
+    model="llama-3.1-8b-instant",
+    temperature=0
+)
+
+
+
+    response = llm.invoke(prompt)
+    return response.content
 
 
 if __name__ == "__main__":
@@ -47,12 +73,12 @@ if __name__ == "__main__":
     chunks = chunk_code(docs)
     vector_store = build_vector_store(chunks)
 
-    query = "Where is login implemented?"
-    results = query_vector_store(vector_store, query)
+    query = "Explain how login works in this project"
+    retrieved_docs = vector_store.similarity_search(query, k=2)
 
-    print(f"Query: {query}\n")
+    answer = generate_answer(query, retrieved_docs)
 
-    for i, doc in enumerate(results):
-        print(f"RESULT {i+1}")
-        print(doc.page_content)
-        print("-" * 40)
+    print("QUESTION:")
+    print(query)
+    print("\nANSWER:")
+    print(answer)
