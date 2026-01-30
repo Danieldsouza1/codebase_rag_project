@@ -1,72 +1,16 @@
-import os
-from dotenv import load_dotenv
+"""
+DEPRECATED FILE
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
-from langchain_groq import ChatGroq
-from src.loaders.code_loader import load_code_files
+This file is kept for learning and reference purposes.
 
+The project has been refactored into a modular structure.
+Please run the application using:
 
-load_dotenv()
+    python -m src.app
 
-def chunk_code(documents):
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=100
-    )
-    return splitter.create_documents(documents)
-
-
-def build_vector_store(chunks):
-    embedding_model = HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2"
-    )
-    return FAISS.from_documents(chunks, embedding_model)
-
-
-def generate_answer(query, retrieved_docs):
-    context = "\n\n".join(doc.page_content for doc in retrieved_docs)
-
-    prompt = f"""
-You are a senior software engineer.
-
-Use ONLY the code below to answer the question.
-If the answer is not present, say "Not found in codebase".
-
-CODE:
-{context}
-
-QUESTION:
-{query}
-
-ANSWER:
+Refer to src/app.py for the current entry point.
 """
 
-    llm = ChatGroq(
-    model="llama-3.1-8b-instant",
-    temperature=0
-)
-
-
-
-    response = llm.invoke(prompt)
-    return response.content
-
-
 if __name__ == "__main__":
-    code_folder = "data/sample_code"
-
-    docs = load_code_files(code_folder)
-    chunks = chunk_code(docs)
-    vector_store = build_vector_store(chunks)
-
-    query = "Explain how login works in this project"
-    retrieved_docs = vector_store.similarity_search(query, k=2)
-
-    answer = generate_answer(query, retrieved_docs)
-
-    print("QUESTION:")
-    print(query)
-    print("\nANSWER:")
-    print(answer)
+    print("This file is deprecated.")
+    print("Run the app using: python -m src.app")
