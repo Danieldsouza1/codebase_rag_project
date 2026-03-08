@@ -24,55 +24,7 @@ This project demonstrates how modern AI-powered developer tools (like Copilot Ch
 
 ---
 
-## 🏗️ Architecture Overview
 
-GitHub Repo
-↓
-Code Loader (filtered file ingestion)
-↓
-Text Chunking
-↓
-Embeddings (Sentence Transformers)
-↓
-FAISS Vector Store
-↓
-Retriever
-↓
-LLM (Groq - LLaMA 3.1)
-↓
-Answer / Code Review Output
-
-
----
-
-## 📂 Project Structure
-
- codebase-rag-assistant/
-│
-├── src/
-│ ├── loaders/
-│ │ ├── code_loader.py
-│ │ └── github_loader.py
-│ ├── chunking/
-│ │ └── splitter.py
-│ ├── embeddings/
-│ │ └── embedder.py
-│ ├── vectorstore/
-│ │ └── faiss_store.py
-│ ├── llm/
-│ │ ├── generator.py
-│ │ └── analyzer.py
-│ └── app.py
-│
-├── data/
-│ └── github_repo/
-│
-├── streamlit_app.py
-├── requirements.txt
-├── README.md
-
-
----
 
 ## ⚙️ How It Works
 
