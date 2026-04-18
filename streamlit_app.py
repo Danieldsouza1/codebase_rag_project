@@ -7,6 +7,10 @@ from src.chunking.splitter import chunk_code
 from src.vectorstore.faiss_store import build_vector_store
 from src.llm.generator import generate_answer
 from src.llm.analyzer import analyze_code_issues
+from src.vectorstore.retriever import retrieve_with_threshold
+from src.database import log_query, fetch_recent_logs
+
+
 
 load_dotenv()
 
@@ -46,6 +50,11 @@ if mode == "Ask Questions":
 else:
     user_query = "Find potential issues in this codebase"
 
+with st.sidebar.expander("🕘 Recent Queries"):
+            logs = fetch_recent_logs()
+            for ts, m, q in logs:
+                st.caption(f"[{m}] {q[:60]}...")
+
 run_button = st.button("Run Analysis")
 
 # ----------------------------
@@ -59,20 +68,25 @@ if run_button:
             code_folder = clone_github_repo(repo_url)
             docs = load_code_files(code_folder)
             chunks = chunk_code(docs)
-            vector_store = build_vector_store(chunks)
+            vector_store = build_vector_store(chunks, repo_url=repo_url)
 
         with st.spinner("Running analysis..."):
             if mode == "Ask Questions":
-                retrieved_docs = vector_store.similarity_search(user_query, k=3)
+                retrieved_docs = retrieve_with_threshold(vector_store, user_query, k=5)
                 answer = generate_answer(user_query, retrieved_docs)
+                log_query(user_query, mode, answer)
+
             else:
-                retrieved_docs = vector_store.similarity_search(
-                    "Find potential issues in this codebase",
-                    k=5
-                )
+                retrieved_docs = retrieve_with_threshold(vector_store, "Find potential issues in this codebase", k=5)
                 answer = analyze_code_issues(retrieved_docs)
+                log_query(user_query, mode, answer)
+
 
         st.success("Done!")
 
         st.subheader("Result")
         st.write(answer)
+        with st.expander("📁 Source Files Used"):
+            sources = list({doc.metadata.get("source", "unknown") for doc in retrieved_docs})
+            for s in sources:
+                st.code(s)

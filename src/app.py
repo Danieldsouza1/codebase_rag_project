@@ -5,6 +5,8 @@ from src.chunking.splitter import chunk_code
 from src.vectorstore.faiss_store import build_vector_store
 from src.llm.generator import generate_answer
 from src.llm.analyzer import analyze_code_issues
+from src.vectorstore.retriever import retrieve_with_threshold
+
 
 load_dotenv()
 
@@ -21,15 +23,15 @@ def main():
 
     docs = load_code_files(code_folder)
     chunks = chunk_code(docs)
-    vector_store = build_vector_store(chunks)
+    vector_store = build_vector_store(chunks, repo_url=repo_url)
 
     if review_mode:
         query = "Find potential issues in this codebase"
-        retrieved_docs = vector_store.similarity_search(query, k=5)
+        retrieved_docs = retrieve_with_threshold(vector_store, query, k=5)
         answer = analyze_code_issues(retrieved_docs)
     else:
         query = "How does authentication work in this project?"
-        retrieved_docs = vector_store.similarity_search(query, k=3)
+        retrieved_docs = retrieve_with_threshold(vector_store, query, k=5)
         answer = generate_answer(query, retrieved_docs)
 
     print(answer)

@@ -1,5 +1,12 @@
 from langchain_groq import ChatGroq
 
+_llm = None
+
+def get_llm():
+    global _llm
+    if _llm is None:
+        _llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+    return _llm
 
 def generate_answer(query, retrieved_docs):
     context = "\n\n".join(doc.page_content for doc in retrieved_docs)
@@ -18,11 +25,6 @@ QUESTION:
 
 ANSWER:
 """
-
-    llm = ChatGroq(
-        model="llama-3.1-8b-instant",
-        temperature=0
-    )
-
+    llm = get_llm()  # use cached instance
     response = llm.invoke(prompt)
     return response.content
