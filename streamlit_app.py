@@ -35,6 +35,7 @@ mode = st.sidebar.radio(
     "Select Mode",
     ["Ask Questions", "Code Review", "Agent Mode"]
 )
+force_reindex = st.sidebar.checkbox("Force Re-index", value=False)
 
 # Mode descriptions in sidebar
 if mode == "Ask Questions":
@@ -87,7 +88,7 @@ if run_button:
             code_folder = clone_github_repo(repo_url)
             docs = load_code_files(code_folder)
             chunks = chunk_code(docs)
-            vector_store = build_vector_store(chunks, repo_url=repo_url)
+            vector_store = build_vector_store(chunks, repo_url=repo_url, force=force_reindex)
 
         # -------------------------
         # Mode 1: Ask Questions

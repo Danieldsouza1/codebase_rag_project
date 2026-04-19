@@ -6,10 +6,6 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 
 
 def build_codebase_agent(vector_store):
-    """
-    Builds a tool-calling agent that can search and analyze
-    an indexed codebase using multiple strategies.
-    """
 
     # ----------------------------------------------------------------
     # Tool 1 — Semantic search across the codebase
@@ -78,7 +74,7 @@ def build_codebase_agent(vector_store):
 
             content = "\n\n".join(chunk.page_content for chunk in file_chunks[:4])
 
-            llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+            llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
             summary_prompt = f"""Summarize what this file does in 3-5 sentences.
 Focus on: its purpose, key functions/classes, and how it fits into the project.
 
@@ -112,7 +108,7 @@ SUMMARY:"""
             for doc in docs
         )
 
-        llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.1)
+        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
         review_prompt = f"""You are a senior security engineer.
 Review the following code specifically for:
 1. Security vulnerabilities
@@ -143,7 +139,7 @@ REVIEW:"""
     # Build the agent manually — works with LangChain 1.x
     # ----------------------------------------------------------------
     def run_agent(user_input: str) -> dict:
-        llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
         llm_with_tools = llm.bind_tools(tools)
 
         messages = [
@@ -155,14 +151,33 @@ You have four tools available:
 - summarize_file: get a summary of a specific file
 - review_code_for_issues: targeted security and bug review
 
-Always use tools to find evidence before answering. Cite file names in your answer."""),
+STRICT RULES:
+1. Always call at least one tool before answering
+2. Use search_codebase for most questions
+3. Use list_indexed_files first if the question is about project structure or overview
+4. Never answer from memory — only from tool results
+5. Always cite file names in your final answer"""),
             HumanMessage(content=user_input)
         ]
 
         intermediate_steps = []
 
         for _ in range(6):
-            response = llm_with_tools.invoke(messages)
+            try:
+                response = llm_with_tools.invoke(messages)
+            except Exception as e:
+                error_msg = str(e)
+                print(f"AGENT ERROR: {error_msg}")  # shows in terminal
+                final_answer = f"Tool call failed with error: {error_msg}"
+                if intermediate_steps:
+                    final_answer += "\n\nHere is what I found before the error:\n\n"
+                    for tool_name, tool_input, observation in intermediate_steps:
+                        final_answer += f"**{tool_name}**: {observation[:500]}\n\n"
+                return {
+                    "output": final_answer,
+                    "intermediate_steps": intermediate_steps
+                }
+
             messages.append(response)
 
             # No tool calls means the agent has its final answer
@@ -176,8 +191,11 @@ Always use tools to find evidence before answering. Cite file names in your answ
 
                 matched_tool = next((t for t in tools if t.name == tool_name), None)
                 if matched_tool:
-                    arg_value = list(tool_input.values())[0] if tool_input else ""
-                    observation = matched_tool.invoke(arg_value)
+                    try:
+                        arg_value = list(tool_input.values())[0] if tool_input else ""
+                        observation = matched_tool.invoke(arg_value)
+                    except Exception as e:
+                        observation = f"Tool execution failed: {str(e)}"
 
                     intermediate_steps.append((tool_name, str(tool_input), str(observation)))
 
